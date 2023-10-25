@@ -14,7 +14,6 @@ import CenterManagement.repositories.CourseRepo;
 import CenterManagement.repositories.InstructorRepo;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 public class CourseService {
@@ -83,21 +82,7 @@ public class CourseService {
     }
 
     public List<CourseWithStudentsAndStartDateDTO> getAllCoursesWithStudents() {
-        List<CourseWithStudentsAndStartDateDTO> coursesWithStudents = new ArrayList<>();
-
-        List<Course> courses = courseRepo.findAll();
-
-        for (Course course : courses) {
-            List<String> enrolledStudents = course.getStudents().stream()
-                    .map(student -> student.getFirstName() + " " + student.getLastName())
-                    .collect(Collectors.toList());
-
-            CourseWithStudentsAndStartDateDTO courseWithStudents = new CourseWithStudentsAndStartDateDTO(course.getName(),
-                    course.getStartDate(), enrolledStudents);
-            coursesWithStudents.add(courseWithStudents);
-        }
-
-        return coursesWithStudents;
+       return courseRepo.getCoursesWithStudents();
     }
 
     public List<CourseWithStudentsDTO> getIntermediateCoursesWithStudents() {
@@ -106,8 +91,6 @@ public class CourseService {
         List<Course> intermediateCourses = courseRepo.findByLevel();
 
         for (Course course : intermediateCourses) {
-            CourseWithStudentsDTO courseWithStudents = new CourseWithStudentsDTO();
-            courseWithStudents.setCourseName(course.getName());
 
             Set<String> studentNames = new HashSet<>();
 
@@ -116,8 +99,7 @@ public class CourseService {
                 studentNames.add(studentFullName);
             }
 
-            courseWithStudents.setEnrolledStudents(new ArrayList<>(studentNames));
-
+            CourseWithStudentsDTO courseWithStudents = new CourseWithStudentsDTO(course.getName(), new ArrayList<>(studentNames));
             intermediateCoursesWithStudents.add(courseWithStudents);
         }
 

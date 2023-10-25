@@ -1,5 +1,6 @@
 package CenterManagement.repositories;
 
+import CenterManagement.dtos.CourseWithStudentsAndStartDateDTO;
 import CenterManagement.entities.Course;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -13,4 +14,10 @@ import java.util.UUID;
 public interface CourseRepo extends JpaRepository<Course, UUID> {
     @Query("SELECT c FROM Course c WHERE c.level = 'intermediate'")
     List<Course> findByLevel();
+
+    @Query(" SELECT\n" +
+            "             new CenterManagement.dtos.CourseWithStudentsAndStartDateDTO(c.name, c.startDate, LISTAGG(s.firstName || ' ' || s.lastName, ', '))\n" +
+            "             FROM Course c LEFT JOIN c.students s\n" +
+            "             GROUP BY c")
+    List<CourseWithStudentsAndStartDateDTO> getCoursesWithStudents();
 }

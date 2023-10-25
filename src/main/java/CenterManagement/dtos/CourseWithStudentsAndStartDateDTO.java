@@ -6,7 +6,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.sql.Timestamp;
-import java.util.List;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -15,5 +14,5 @@ import java.util.List;
 public class CourseWithStudentsAndStartDateDTO {
     private String courseName;
     private Timestamp startDate;
-    private List<String> enrolledStudents;
+    private String enrolledStudents;
 }

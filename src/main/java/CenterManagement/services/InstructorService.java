@@ -4,32 +4,23 @@ import CenterManagement.dtos.InstructorWithCoursesDTO;
 import CenterManagement.dtos.InstructorWithStudentsDTO;
 import CenterManagement.entities.Course;
 import CenterManagement.entities.Instructor;
-import CenterManagement.entities.Student;
-import CenterManagement.mappers.InstructorDetailsMapper;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import CenterManagement.dtos.InstructorDTO;
 import CenterManagement.dtos.InstructorDetailsDTOProjection;
 import CenterManagement.entities.InstructorDetails;
-import CenterManagement.mappers.InstructorDetailsProjectionMapper;
 import CenterManagement.mappers.InstructorMapper;
 import CenterManagement.repositories.InstructorRepo;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
 public class InstructorService {
     private final InstructorRepo instructorRepo;
     private final InstructorMapper instructorMapper;
-    @Autowired
-    private InstructorDetailsMapper instructorDetailsMapper;
-    @Autowired
-    private InstructorDetailsProjectionMapper instructorDetailsProjectionMapper;
 
     @Autowired
     public InstructorService(InstructorRepo instructorRepo, InstructorMapper instructorMapper){
@@ -98,30 +89,8 @@ public class InstructorService {
     }
 
     public List<InstructorWithStudentsDTO> getAllInstructorsWithStudents() {
-        List<InstructorWithStudentsDTO> instructorsWithStudents = new ArrayList<>();
-
-        List<Instructor> instructors = instructorRepo.findAll();
-
-        for (Instructor instructor : instructors) {
-            String instructorName = instructor.getFirstName() + " " + instructor.getLastName();
-            Set<String> studentNames = new HashSet<>(); // Use a Set to ensure uniqueness
-
-            for (Course course : instructor.getCourses()) {
-                for (Student student : course.getStudents()) {
-                    String studentFullName = student.getFirstName() + " " + student.getLastName();
-                    studentNames.add(studentFullName);
-                }
-            }
-
-            InstructorWithStudentsDTO instructorWithStudents = new InstructorWithStudentsDTO(instructorName,
-                    new ArrayList<>(studentNames));
-            instructorsWithStudents.add(instructorWithStudents);
-        }
-
-        return instructorsWithStudents;
+        return instructorRepo.getAllInstructorsWithStudents();
     }
-
-
 
     public void deleteInstructor(int id) {
         instructorRepo.deleteById(id);
