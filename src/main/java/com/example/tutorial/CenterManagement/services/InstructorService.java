@@ -5,6 +5,7 @@ import com.example.tutorial.CenterManagement.dtos.InstructorWithStudentsDTO;
 import com.example.tutorial.CenterManagement.entities.Course;
 import com.example.tutorial.CenterManagement.entities.Instructor;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.validation.ValidationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.example.tutorial.CenterManagement.dtos.InstructorDTO;
@@ -21,11 +22,21 @@ import java.util.stream.Collectors;
 public class InstructorService {
     private final InstructorRepo instructorRepo;
     private final InstructorMapper instructorMapper;
+    private final InstructorValidation instructorValidation;
 
     @Autowired
-    public InstructorService(InstructorRepo instructorRepo, InstructorMapper instructorMapper){
+    public InstructorService(InstructorRepo instructorRepo, InstructorMapper instructorMapper, InstructorValidation instructorValidation){
         this.instructorRepo = instructorRepo;
         this.instructorMapper = instructorMapper;
+        this.instructorValidation = instructorValidation;
+    }
+
+    public boolean isPhoneNumberUniqueWrapper(String phoneNumber) {
+        return instructorValidation.isPhoneNumberUnique(phoneNumber);
+    }
+
+    public boolean isEmailValidWrapper(String email) {
+        return instructorValidation.isEmailValid(email);
     }
 
     public List<InstructorDTO> getAllInstructors() {
@@ -43,14 +54,31 @@ public class InstructorService {
     }
 
     public InstructorDTO saveInstructor(InstructorDTO instructorDTO) {
+        if (!isPhoneNumberUniqueWrapper(instructorDTO.getPhoneNumber())) {
+            throw new ValidationException("Phone number is not unique. Another instructor has the same phone number.");
+        }
+
+        if (!isEmailValidWrapper(instructorDTO.getEmail())) {
+            throw new ValidationException("Invalid email format.");
+        }
+
         Instructor instructor = instructorMapper.toEntity(instructorDTO);
         Instructor savedInstructor = instructorRepo.save(instructor);
         return instructorMapper.toDTO(savedInstructor);
     }
 
     public InstructorDTO updateInstructor(int id, InstructorDTO updatedInstructorDTO) {
+
         Instructor existingInstructor = instructorRepo.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Instructor not found with ID: " + id));
+
+        if (!isPhoneNumberUniqueWrapper(updatedInstructorDTO.getPhoneNumber())) {
+            throw new ValidationException("Phone number is not unique. Another instructor has the same phone number.");
+        }
+
+        if (!isEmailValidWrapper(updatedInstructorDTO.getEmail())) {
+            throw new ValidationException("Invalid email format.");
+        }
 
         existingInstructor.setFirstName(updatedInstructorDTO.getFirstName());
         existingInstructor.setLastName(updatedInstructorDTO.getLastName());

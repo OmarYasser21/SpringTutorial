@@ -1,4 +1,4 @@
-package com.example.tutorial.CenterManagement;
+package com.example.tutorial.CenterManagement.services;
 
 import com.example.tutorial.CenterManagement.dtos.InstructorDTOProjection;
 import com.example.tutorial.CenterManagement.dtos.InstructorDetailsDTO;

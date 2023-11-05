@@ -17,4 +17,6 @@ public interface InstructorRepo extends JpaRepository<Instructor, Integer> {
             "LEFT JOIN c.students s " +
             "GROUP BY i")
     List<InstructorWithStudentsDTO> getAllInstructorsWithStudents();
+
+    Instructor findByPhoneNumber(String phoneNumber);
 }

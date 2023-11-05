@@ -1,4 +1,4 @@
-package com.example.tutorial.CenterManagement;
+package com.example.tutorial.CenterManagement.services;
 
 import com.example.tutorial.CenterManagement.dtos.*;
 import com.example.tutorial.CenterManagement.entities.Course;

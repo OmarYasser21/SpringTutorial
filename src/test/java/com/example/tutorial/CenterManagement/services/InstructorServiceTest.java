@@ -1,4 +1,4 @@
-package com.example.tutorial.CenterManagement;
+package com.example.tutorial.CenterManagement.services;
 
 import com.example.tutorial.CenterManagement.dtos.*;
 import com.example.tutorial.CenterManagement.entities.Course;
@@ -7,19 +7,21 @@ import com.example.tutorial.CenterManagement.entities.InstructorDetails;
 import com.example.tutorial.CenterManagement.mappers.InstructorMapper;
 import com.example.tutorial.CenterManagement.repositories.InstructorRepo;
 import com.example.tutorial.CenterManagement.services.InstructorService;
+import com.example.tutorial.CenterManagement.services.InstructorValidation;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.validation.ValidationException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 public class InstructorServiceTest {
@@ -29,8 +31,39 @@ public class InstructorServiceTest {
     @Mock
     InstructorMapper instructorMapper;
 
+    @Mock
+    InstructorValidation instructorValidation;
+
     @InjectMocks
+    @Spy
     InstructorService instructorService;
+
+    @Test
+    public void testIsPhoneNumberUniqueWrapper() {
+        // Arrange
+        String phoneNumber = "1234567890";
+        doReturn(true).when(instructorValidation).isPhoneNumberUnique(phoneNumber);
+
+        // Act
+        boolean result = instructorService.isPhoneNumberUniqueWrapper(phoneNumber);
+
+        // Assert
+        assertTrue(result);
+    }
+
+    @Test
+    public void testIsEmailValidWrapper() {
+        // Arrange
+        String email = "test@example.com";
+        doReturn(true).when(instructorValidation).isEmailValid(email);
+
+        // Act
+        boolean result = instructorService.isEmailValidWrapper(email);
+
+        // Assert
+        assertTrue(result);
+    }
+
 
     @Test
     public void testGetAllInstructors() {
@@ -93,6 +126,10 @@ public class InstructorServiceTest {
         Instructor instructor = new Instructor(1, "Instructor1", null, null, null, null, null, null);
         InstructorDTO instructorDTO = new InstructorDTO(1, "Instructor1", null, null, null, null, null, null);
 
+//        when(instructorService.isPhoneNumberUniqueWrapper(instructorDTO.getPhoneNumber())).thenReturn(true);
+//        when(instructorService.isEmailValidWrapper(instructorDTO.getEmail())).thenReturn(true);
+        doReturn(true).when(instructorService).isPhoneNumberUniqueWrapper(instructorDTO.getPhoneNumber());
+        doReturn(true).when(instructorService).isEmailValidWrapper(instructorDTO.getEmail());
         doReturn(instructor).when(instructorMapper).toEntity(instructorDTO);
         doReturn(instructor).when(instructorRepo).save(instructor);
         doReturn(instructorDTO).when(instructorMapper).toDTO(instructor);
@@ -109,12 +146,45 @@ public class InstructorServiceTest {
     }
 
     @Test
+    public void testSaveInstructor_PhoneNumberValidationFail() {
+        // Arrange
+        InstructorDTO instructorDTO = new InstructorDTO(1, "Instructor1", null, "1234567890", "validemail@example.com", null, null, null);
+
+        // Set up your mock behavior for phone number validation to fail
+        doReturn(false).when(instructorService).isPhoneNumberUniqueWrapper(instructorDTO.getPhoneNumber());
+
+        // Act and Assert
+        assertThrows(ValidationException.class, () -> {
+            instructorService.saveInstructor(instructorDTO);
+        });
+    }
+
+    @Test
+    public void testSaveInstructor_EmailValidationFail() {
+        // Arrange
+        InstructorDTO instructorDTO = new InstructorDTO(1, "Instructor1", null, "1234567890", "invalidemail", null, null, null);
+
+        // Set up your mock behavior for email validation to fail
+        doReturn(true).when(instructorService).isPhoneNumberUniqueWrapper(instructorDTO.getPhoneNumber());
+        doReturn(false).when(instructorService).isEmailValidWrapper(instructorDTO.getEmail());
+
+        // Act and Assert
+        assertThrows(ValidationException.class, () -> {
+            instructorService.saveInstructor(instructorDTO);
+        });
+    }
+
+    @Test
     public void testUpdateInstructor() {
         // Arrange
         Instructor existingInstructor = new Instructor(1, "Instructor1", null, null, null, null, null, null);
         InstructorDTO updatedInstructorDTO = new InstructorDTO(1, "Instructor2", null, null, null, null, null, null);
 
         doReturn(Optional.of(existingInstructor)).when(instructorRepo).findById(1);
+//        when(instructorService.isPhoneNumberUniqueWrapper(updatedInstructorDTO.getPhoneNumber())).thenReturn(true);
+//        when(instructorService.isEmailValidWrapper(updatedInstructorDTO.getEmail())).thenReturn(true);
+        doReturn(true).when(instructorService).isPhoneNumberUniqueWrapper(updatedInstructorDTO.getPhoneNumber());
+        doReturn(true).when(instructorService).isEmailValidWrapper(updatedInstructorDTO.getEmail());
         doReturn(existingInstructor).when(instructorRepo).save(existingInstructor);
         doReturn(updatedInstructorDTO).when(instructorMapper).toDTO(existingInstructor);
 
@@ -126,6 +196,39 @@ public class InstructorServiceTest {
 //        assertNotNull(result);
 //        assertEquals(1, result.getId());
 //        assertEquals("Instructor2", result.getFirstName());
+    }
+
+    @Test
+    public void testUpdateInstructor_PhoneNumberValidationFail() {
+        // Arrange
+        Instructor existingInstructor = new Instructor(1, "Instructor1", null, null, null, null, null, null);
+        InstructorDTO updatedInstructorDTO = new InstructorDTO(1, "Instructor2", null, "1234567890", "validemail@example.com", null, null, null);
+
+        // Set up your mock behavior for phone number validation to fail
+        doReturn(Optional.of(existingInstructor)).when(instructorRepo).findById(1);
+        doReturn(false).when(instructorService).isPhoneNumberUniqueWrapper(updatedInstructorDTO.getPhoneNumber());
+
+        // Act and Assert
+        assertThrows(ValidationException.class, () -> {
+            instructorService.updateInstructor(1, updatedInstructorDTO);
+        });
+    }
+
+    @Test
+    public void testUpdateInstructor_EmailValidationFail() {
+        // Arrange
+        Instructor existingInstructor = new Instructor(1, "Instructor1", null, null, null, null, null, null);
+        InstructorDTO updatedInstructorDTO = new InstructorDTO(1, "Instructor2", null, "1234567890", "invalidemail", null, null, null);
+
+        // Set up your mock behavior for email validation to fail
+        doReturn(Optional.of(existingInstructor)).when(instructorRepo).findById(1);
+        doReturn(true).when(instructorService).isPhoneNumberUniqueWrapper(updatedInstructorDTO.getPhoneNumber());
+        doReturn(false).when(instructorService).isEmailValidWrapper(updatedInstructorDTO.getEmail());
+
+        // Act and Assert
+        assertThrows(ValidationException.class, () -> {
+            instructorService.updateInstructor(1, updatedInstructorDTO);
+        });
     }
 
     @Test
@@ -162,6 +265,8 @@ public class InstructorServiceTest {
         // Mock instructorRepo to return an instructor with no instructorDetails
         Instructor existingInstructor = new Instructor(instructorId, "OldFirstName", "OldLastName", "OldPhoneNumber", "OldEmail", "OldTitle", null, null);
         doReturn(Optional.of(existingInstructor)).when(instructorRepo).findById(instructorId);
+        doReturn(true).when(instructorService).isPhoneNumberUniqueWrapper(updatedInstructorDTO.getPhoneNumber());
+        doReturn(true).when(instructorService).isEmailValidWrapper(updatedInstructorDTO.getEmail());
         doReturn(existingInstructor).when(instructorRepo).save(existingInstructor);
         doReturn(updatedInstructorDTO).when(instructorMapper).toDTO(existingInstructor);
 
@@ -198,6 +303,8 @@ public class InstructorServiceTest {
 
         Instructor existingInstructor = new Instructor(instructorId, "OldFirstName", "OldLastName", "OldPhoneNumber", "OldEmail", "OldTitle", existingInstructorDetails, null);
         doReturn(Optional.of(existingInstructor)).when(instructorRepo).findById(instructorId);
+        doReturn(true).when(instructorService).isPhoneNumberUniqueWrapper(updatedInstructorDTO.getPhoneNumber());
+        doReturn(true).when(instructorService).isEmailValidWrapper(updatedInstructorDTO.getEmail());
         doReturn(existingInstructor).when(instructorRepo).save(existingInstructor);
         doReturn(updatedInstructorDTO).when(instructorMapper).toDTO(existingInstructor);
 
