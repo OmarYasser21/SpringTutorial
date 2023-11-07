@@ -11,6 +11,7 @@ import lombok.Setter;
 import org.springframework.validation.annotation.Validated;
 import com.example.tutorial.CenterManagement.enums.Level;
 
+import java.io.Serializable;
 import java.sql.Timestamp;
 import java.util.UUID;
 
@@ -19,7 +20,7 @@ import java.util.UUID;
 @Getter
 @Setter
 @Validated
-public class CourseDTOProjection {
+public class CourseDTOProjection implements Serializable {
     private UUID id;
 
     @NotBlank

@@ -7,6 +7,10 @@ import com.example.tutorial.CenterManagement.entities.Instructor;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.ValidationException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import com.example.tutorial.CenterManagement.dtos.InstructorDTO;
 import com.example.tutorial.CenterManagement.dtos.InstructorDetailsDTOProjection;
@@ -23,6 +27,8 @@ public class InstructorService {
     private final InstructorRepo instructorRepo;
     private final InstructorMapper instructorMapper;
     private final InstructorValidation instructorValidation;
+    @Autowired
+    private CacheManager cacheManager;
 
     @Autowired
     public InstructorService(InstructorRepo instructorRepo, InstructorMapper instructorMapper, InstructorValidation instructorValidation){
@@ -39,11 +45,13 @@ public class InstructorService {
         return instructorValidation.isEmailValid(email);
     }
 
+    @Cacheable(value = "instructors")
     public List<InstructorDTO> getAllInstructors() {
         List<Instructor> instructors = instructorRepo.findAll();
         return instructorMapper.toDTOs(instructors);
     }
 
+    @Cacheable(value = "instructors", key = "#id")
     public InstructorDTO getInstructorById(int id) {
         Instructor instructor = instructorRepo.findById(id).orElse(null);
         if (instructor != null) {
@@ -67,6 +75,7 @@ public class InstructorService {
         return instructorMapper.toDTO(savedInstructor);
     }
 
+    @CachePut(value = "instructors", key = "#id")
     public InstructorDTO updateInstructor(int id, InstructorDTO updatedInstructorDTO) {
 
         Instructor existingInstructor = instructorRepo.findById(id)
@@ -101,6 +110,7 @@ public class InstructorService {
         }
 
         Instructor updatedInstructor = instructorRepo.save(existingInstructor);
+        cacheManager.getCache("instructors").clear();
 
         return instructorMapper.toDTO(updatedInstructor);
     }
@@ -126,6 +136,7 @@ public class InstructorService {
         return instructorRepo.getAllInstructorsWithStudents();
     }
 
+    @CacheEvict(value = "instructors", key = "#id", allEntries = true)
     public void deleteInstructor(int id) {
         instructorRepo.deleteById(id);
     }

@@ -8,6 +8,7 @@ import lombok.Setter;
 import org.springframework.validation.annotation.Validated;
 import com.example.tutorial.CenterManagement.enums.Gender;
 
+import java.io.Serializable;
 import java.util.Set;
 import java.util.UUID;
 
@@ -16,7 +17,7 @@ import java.util.UUID;
 @Getter
 @Setter
 @Validated
-public class StudentDTO {
+public class StudentDTO implements Serializable {
     private UUID id;
 
     @NotBlank

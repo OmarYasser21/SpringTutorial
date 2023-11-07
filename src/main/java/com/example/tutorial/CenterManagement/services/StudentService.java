@@ -1,5 +1,6 @@
 package com.example.tutorial.CenterManagement.services;
 
+import com.example.tutorial.CenterManagement.caching.RedisService;
 import com.example.tutorial.CenterManagement.entities.Course;
 import com.example.tutorial.CenterManagement.repositories.CourseRepo;
 import jakarta.persistence.EntityNotFoundException;
@@ -11,31 +12,61 @@ import com.example.tutorial.CenterManagement.mappers.StudentMapper;
 import com.example.tutorial.CenterManagement.repositories.StudentRepo;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class StudentService {
     private final StudentRepo studentRepo;
     private final StudentMapper studentMapper;
     private final CourseRepo courseRepo;
+    private final RedisService redisService;
 
     @Autowired
-    public StudentService(StudentRepo studentRepo, StudentMapper studentMapper, CourseRepo courseRepo) {
+    public StudentService(StudentRepo studentRepo, StudentMapper studentMapper, CourseRepo courseRepo, RedisService redisService) {
         this.studentRepo = studentRepo;
         this.studentMapper = studentMapper;
         this.courseRepo = courseRepo;
+        this.redisService= redisService;
     }
 
     public List<StudentDTO> getAllStudents() {
-        List<Student> students = studentRepo.findAll();
-        return studentMapper.toDTOs(students);
+        // First, check if the data is in the Redis cache
+        Optional<List<StudentDTO>> cachedData = redisService.getValueFromRedis("allStudentsCache");
+
+        if (cachedData.isPresent()) {
+            return cachedData.get(); // Return the cached data
+        } else {
+            // If the data is not in the cache, retrieve it from your data source
+            List<Student> students = studentRepo.findAll();
+            List<StudentDTO> studentDTOs = studentMapper.toDTOs(students);
+
+            // Save the data in the cache for future use
+            redisService.saveExpireDataInRedis("allStudentsCache", studentDTOs, 10, TimeUnit.MINUTES);
+
+            return studentDTOs;
+        }
     }
 
     public StudentDTO getStudentById(UUID id) {
-        Student student = studentRepo.findById(id).orElse(null);
-        if (student != null) {
-            return studentMapper.toDTO(student);
+        // Check if the data is in the Redis cache for the specified id
+        Optional<StudentDTO> cachedData = redisService.getHash("studentCache", id.toString(), StudentDTO.class);
+
+        if (cachedData.isPresent()) {
+            return cachedData.get(); // Return the cached data
         } else {
-            return null;
+            // If the data is not in the cache, retrieve it from your data source
+            Student student = studentRepo.findById(id).orElse(null);
+
+            if (student != null) {
+                StudentDTO studentDTO = studentMapper.toDTO(student);
+
+                // Save the data in the cache for this specific id
+                redisService.setHash("studentCache", id.toString(), studentDTO, StudentDTO.class);
+
+                return studentDTO;
+            } else {
+                return null;
+            }
         }
     }
 
